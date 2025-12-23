@@ -1,0 +1,5 @@
+
+Application config properties needed
+logger
+database instance
+dependency injection
