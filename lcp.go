@@ -1,5 +1,11 @@
 package main
 
+import (
+	"fmt"
+	"strings"
+	"unicode"
+)
+
 // import "fmt"
 
 // func longestCommonPrefix(strs []string) string {
@@ -35,7 +41,42 @@ package main
 // }
 
 // func main() {
-// 	strs := []string{"flower", "flow", "flight"}
-// 	result := longestCommonPrefix(strs)
-// 	fmt.Println(result)
+// 	paragraph := "Bob"
+// 	result := mostCommonWord(paragraph, []string{})
+// 	fmt.Println("\nMax word", result)
 // }
+
+func mostCommonWord(paragraph string, banned []string) string {
+	bannedMap := make(map[string]bool)
+
+	for _, b := range banned {
+		bannedMap[strings.ToLower(b)] = true
+	}
+	cache := make(map[string]int)
+	word := ""
+	maxWord := ""
+	maxCount := 0
+
+	paragraph += " "
+
+	for _, char := range paragraph {
+
+		if unicode.IsLetter(char) {
+			word += string(unicode.ToLower(char))
+		} else {
+			if len(word) > 0 {
+				if !bannedMap[word] {
+					cache[word]++
+					if cache[word] >= maxCount {
+						maxCount = cache[word]
+						maxWord = word
+					}
+				}
+				word = ""
+			}
+		}
+
+	}
+	fmt.Println("cache", cache)
+	return maxWord
+}

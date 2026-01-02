@@ -1,10 +1,14 @@
 package webutil
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 
+	"github.com/Abrahamthefirst/back-to-go/internal/dtos"
+	"github.com/Abrahamthefirst/back-to-go/internal/entities"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
@@ -51,4 +55,28 @@ func ValidateRequest(c *gin.Context, dto any) error {
 	}
 
 	return nil
+}
+
+func HandleError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, entities.ErrInvalidCredentials):
+		c.JSON(http.StatusUnauthorized, dtos.ErrorResponse{
+			Message:    err.Error(),
+			StatusCode: http.StatusUnauthorized,
+		})
+	case errors.Is(err, entities.ErrConflict):
+		c.JSON(http.StatusConflict, dtos.ErrorResponse{
+			Message:    err.Error(),
+			StatusCode: http.StatusConflict,
+		})
+
+	case errors.Is(err, context.DeadlineExceeded):
+		c.JSON(http.StatusRequestTimeout, dtos.ErrorResponse{
+			Message:    "The server took too long to respond. Please try again.",
+			StatusCode: 408,
+		})
+
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+	}
 }
