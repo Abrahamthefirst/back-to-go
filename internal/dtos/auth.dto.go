@@ -26,6 +26,7 @@ type SignupResponse struct {
 	Data       SignupResponseBody `json:"data"`
 	StatusCode uint               `json:"statusCode"`
 }
+
 type LoginRequestDto struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,gte=4,lte=20"`
@@ -35,4 +36,8 @@ type SignupRequestDto struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,gte=4,lte=20"`
 	Username string `json:"username" validate:"required,gte=3,lte=20"`
+}
+
+type ChanePasswordRequestDto struct {
+	Email string `json:"email" validate:"required,email"`
 }

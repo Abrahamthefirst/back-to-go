@@ -1,7 +1,8 @@
 package config
 
 import (
-	"log"
+	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -12,11 +13,13 @@ type Config struct {
 	PORT                 string
 	ACCESS_TOKEN_SECRET  string
 	REFRESH_TOKEN_SECRET string
+	SMTP_USERNAME        string
+	SMTP_PASSWORD        string
 }
 
 func Load() *Config {
-	if err := godotenv.Load(); err != nil {
-		log.Println("No env file found, using system env")
+	if err := godotenv.Load("../../.env"); err != nil {
+		slog.Warn("No env file found, using system env")
 	}
 
 	return &Config{
@@ -24,6 +27,8 @@ func Load() *Config {
 		PORT:                 GetEnv("PORT", ":4000"),
 		ACCESS_TOKEN_SECRET:  GetEnv("ACCESS_TOKEN_SECRET", ""),
 		REFRESH_TOKEN_SECRET: GetEnv("REFRESH_TOKEN_SECRET", ""),
+		SMTP_USERNAME:        GetEnv("SMTP_USERNAME", ""),
+		SMTP_PASSWORD:        GetEnv("SMTP_PASSWORD", ""),
 	}
 }
 
@@ -31,7 +36,7 @@ func GetEnv(key string, fallback string) string {
 	val, exist := os.LookupEnv(key)
 
 	if !exist {
-		log.Printf("%v is not set", key)
+		slog.Warn(fmt.Sprintf("%v is not set", key))
 		return fallback
 	}
 	return val

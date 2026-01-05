@@ -1,13 +1,12 @@
 package handler
 
 import (
-	"errors"
 	"log/slog"
 	"net/http"
 
 	"github.com/Abrahamthefirst/back-to-go/internal/dtos"
-	"github.com/Abrahamthefirst/back-to-go/internal/entities"
-	authserivce "github.com/Abrahamthefirst/back-to-go/internal/service"
+	authserivce "github.com/Abrahamthefirst/back-to-go/internal/service/auth-service"
+
 	"github.com/Abrahamthefirst/back-to-go/internal/webutil"
 	"github.com/gin-gonic/gin"
 )
@@ -33,13 +32,10 @@ func (a *AuthController) Signup(c *gin.Context) {
 	}
 
 	user, err := a.authService.SignUp(requestDto)
-	if err != nil {
-		if errors.Is(err, entities.ErrConflict) {
-			c.JSON(http.StatusConflict, dtos.ErrorResponse{Message: err.Error(), Error: err, StatusCode: http.StatusConflict})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 
+	if err != nil {
+		webutil.HandleError(c, err)
+		return
 	}
 
 	response := dtos.SignupResponse{
@@ -60,6 +56,7 @@ func (a *AuthController) Login(c *gin.Context) {
 	}
 
 	result, err := a.authService.Login(c.Request.Context(), requestDto)
+
 	if err != nil {
 		webutil.HandleError(c, err)
 		return
@@ -75,12 +72,11 @@ func (a *AuthController) Login(c *gin.Context) {
 
 }
 
-func (a *AuthController) ChangePassword(c *gin.Context) {}
-
 func RegisterAuthRoutes(r *gin.Engine, authController *AuthController) {
 	auth := r.Group("/auth")
 	{
 		auth.POST("/register", authController.Signup)
 		auth.POST("/login", authController.Login)
+		auth.POST("/usera", authController.Login)
 	}
 }

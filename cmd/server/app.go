@@ -1,19 +1,19 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
-	"strings"
-	"time"
+	"strconv"
 
 	handler "github.com/Abrahamthefirst/back-to-go/internal/api"
 	"github.com/Abrahamthefirst/back-to-go/internal/config"
+	"github.com/Abrahamthefirst/back-to-go/internal/middleware"
 	"github.com/Abrahamthefirst/back-to-go/internal/repository"
-	authserivce "github.com/Abrahamthefirst/back-to-go/internal/service"
+	authserivce "github.com/Abrahamthefirst/back-to-go/internal/service/auth-service"
+	emailservice "github.com/Abrahamthefirst/back-to-go/internal/service/email-service"
 	"github.com/gin-gonic/gin"
+
 	"gorm.io/gorm"
 )
 
@@ -49,46 +49,28 @@ func (a *application) Bootstrap() {
 
 func (a *application) startServer() {
 
-	a.router.GET("/health", func(c *gin.Context) {
-		slog.WarnContext(c.Request.Context(), "request validation failed",
-			"path", c.Request.URL.Path,
-		)
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Health-Check",
-		})
-	})
+	a.router.Use(middleware.AuthMiddleware())
 
-	timeoutMiddleware := func(timeout time.Duration) gin.HandlerFunc {
-		return func(c *gin.Context) {
-			ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
-			defer cancel()
+	port, err := strconv.Atoi(os.Getenv("SMTP_PORT"))
 
-			c.Request = c.Request.WithContext(ctx)
-			c.Next()
-		}
+	if err != nil {
+		slog.Warn("Could not convert smtp port to integer")
 	}
 
-	authMiddleware := func() gin.HandlerFunc {
-		return func(c *gin.Context) {
-			header := c.GetHeader("Authorization")
-			a.logger.Log(c.Request.Context(), slog.LevelInfo, header)
+	email, err := emailservice.New(os.Getenv("SMTP_HOST"), port, os.Getenv("SMTP_USER"), os.Getenv("SMTP_PASS"), os.Getenv("SMTP_USER"))
 
-			token := strings.Split(header, "Bearer ")
-			fmt.Println(token[1])
-
-			c.Next()
-		}
+	if err != nil {
+		slog.Warn(fmt.Sprintf("Failed to initialize email service: %v", err))
 	}
 
-	a.router.Use(timeoutMiddleware(time.Second * 2))
-	a.router.Use(authMiddleware())
+	userRepository := repository.NewUserRepository(a.db)
 
-	UserRepository := repository.NewUserRepository(a.db)
-	authserivce := authserivce.NewAuthService(UserRepository)
+	authserivce := authserivce.NewAuthService(userRepository, email)
+
 	authController := handler.NewAuthController(authserivce)
 
 	handler.RegisterAuthRoutes(a.router, authController)
 
-	a.router.Run(":3000")
+	a.router.Run(a.cfg.PORT)
 
 }

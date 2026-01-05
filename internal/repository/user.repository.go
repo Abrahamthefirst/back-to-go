@@ -70,6 +70,22 @@ func (r *UserRepository) Create(user entities.User) (*entities.User, error) {
 
 }
 
+func (r *UserRepository) GetAllUsers(ctx context.Context) (*[]entities.User, error) {
+	var users []UserModel
+
+	if err := r.db.Find(&users).Error; err != nil {
+		return nil, err
+	}
+
+	usersList := []entities.User{}
+
+	for _, user := range users {
+		usersList = append(usersList, *user.toDomain())
+	}
+
+	return &usersList, nil
+}
+
 // func (repo *UserRepository) FindByID(id uint) (*User, error) {
 // 	var user User
 // 	if err := repo.db.First(&user, id).Error; err != nil {
